@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 
-const { v4: uuidv4, validate : validateUuid, validate } = require('uuid');
+const { v4: uuidv4,  validate } = require('uuid');
 
 const app = express();
 app.use(express.json());
@@ -19,49 +19,41 @@ function checksExistsUserAccount(request, response, next) {
   request.user = user;
   return next();
 }
+
 function checksCreateTodosUserAvailability(request, response, next) {
-  const { user } = request;
+  const { user } = request
 
-  const verifyPlanUser = user.find((pro) => pro.pro);
-
-
-  if(verifyPlanUser === true || verifyPlanUser === false) {
-    return response.status(403).json({ error: "Your need sign in a plan" });
-
-  } else if (verifyPlanUser.todos.length <= 10) {
-    return response.status(403).json({ error: "You already 10 todos created" });
+  if (user.pro === false && user.todos.length < 10) {
+    return next()
   }
-
-  request.user = verifyPlanUser;
-  return next();
+  if (user.pro === true) {
+    return next()
+  }
+  if (user.pro === false && user.todos.length >= 10) {
+    return response.status(403).json({ error: 'You plan free already finished' })
+  }
 };
 
 function checksTodoExists(request, response, next) {
   const { username } = request.headers;
   const { id } = request.params;
-  const { user } = request;
-
-  const verifyUuid = validate(id);
   
-  const verifyUserExists = users.find((user) => user.username === username);
-
-  const Search = user.todos;
-
-  const todo = Search.find((todo) => todo.id === id);
-
-  if(!verifyUuid) {
+  const validateUuid = validate(id);
+  if(!validateUuid) {
     return response.status(400).json({ error: "uuuid not was validated"}); 
   };
   
-  if(!verifyUserExists) {
+  const user = users.find((user) => user.username === username);
+  if(!user) {
     return response.status(404).json({ error: "User not found"});
   };
   
+  const todo = user.todos.find((newTodo) => newTodo.id === id);
   if(!todo) {
     return response.status(404).json({error: "todo does not exists"});
   }; 
   
-  request.user = verifyUserExists;
+  request.user = user;
   request.todo = todo;
   return next();
 }
