@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 
-const { v4: uuidv4, validate : validateUuid } = require('uuid');
+const { v4: uuidv4, validate : validateUuid, validate } = require('uuid');
 
 const app = express();
 app.use(express.json());
@@ -22,34 +22,46 @@ function checksExistsUserAccount(request, response, next) {
 function checksCreateTodosUserAvailability(request, response, next) {
   const { user } = request;
 
-  if (user.pro === false && user.todos.length <= 10) {
-    next()
+  const verifyPlanUser = user.find((type) => type.pro);
 
-  } else if (user.pro === true) {
-    next()
-    
+
+  if(verifyPlanUser || verifyPlanUser === false) {
+    return response.status(403).json({ error: "Your need sign in a plan" });
+
+  } else if (verifyPlanUser.todos.length <= 10) {
+    return response.status(403).json({ error: "You already 10 todos created" });
   }
 
-  else if (user.pro === false && user.todos.length === 10) {
-    return response.status(404).json({ error :"not is possible"});
-  }
-
-  request.user = user;
-  return next()
-}
+  request.user = verifyPlanUser;
+  return next();
+};
 
 function checksTodoExists(request, response, next) {
+  const { username } = request.headers;
+  const { id } = request.params;
   const { user } = request;
 
-  const { id } = request.params;
+  const verifyUserExists = users.find((user) => user.username === username);
 
   const todo = user.todos.find((todo) => todo.id === id);
 
-  if(!todo) {
-    return response.status(404).json({error: "todo does not exists"})
+  const verifyUuid = validate(id);
+
+  if(!verifyUuid) {
+    return response.status(404).json({ error: "uuuid not was validated"}); 
   }
+
+  if(!verifyUserExists) {
+    return response.status(404).json({ error: "User not found"});
+  };
+
+  if(!todo) {
+    return response.status(404).json({error: "todo does not exists"});
+  }; 
+
+  request.user = verifyUserExists;
   request.todo = todo;
-  return next()
+  return next();
 }
 
 function findUserById(request, response, next) {
