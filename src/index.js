@@ -22,10 +22,10 @@ function checksExistsUserAccount(request, response, next) {
 function checksCreateTodosUserAvailability(request, response, next) {
   const { user } = request;
 
-  const verifyPlanUser = user.find((type) => type.pro);
+  const verifyPlanUser = user.find((pro) => pro.pro);
 
 
-  if(verifyPlanUser || verifyPlanUser === false) {
+  if(verifyPlanUser === true || verifyPlanUser === false) {
     return response.status(403).json({ error: "Your need sign in a plan" });
 
   } else if (verifyPlanUser.todos.length <= 10) {
@@ -41,24 +41,26 @@ function checksTodoExists(request, response, next) {
   const { id } = request.params;
   const { user } = request;
 
+  const verifyUuid = validate(id);
+  
   const verifyUserExists = users.find((user) => user.username === username);
 
-  const todo = user.todos.find((todo) => todo.id === id);
+  const Search = user.todos;
 
-  const verifyUuid = validate(id);
+  const todo = Search.find((todo) => todo.id === id);
 
   if(!verifyUuid) {
-    return response.status(404).json({ error: "uuuid not was validated"}); 
-  }
-
+    return response.status(400).json({ error: "uuuid not was validated"}); 
+  };
+  
   if(!verifyUserExists) {
     return response.status(404).json({ error: "User not found"});
   };
-
+  
   if(!todo) {
     return response.status(404).json({error: "todo does not exists"});
   }; 
-
+  
   request.user = verifyUserExists;
   request.todo = todo;
   return next();
